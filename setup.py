@@ -115,14 +115,16 @@ if not SKIP_CUDA_BUILD:
                 "FlashAttention is only supported on CUDA 11.6 and above.  "
                 "Note: make sure nvcc has a supported version by running nvcc -V."
             )
-    # cc_flag.append("-gencode")
-    # cc_flag.append("arch=compute_75,code=sm_75")
+    cc_flag.append("-DTORCH_USE_CUDA_DSA")
+
+    cc_flag.append("-gencode")
+    cc_flag.append("arch=compute_75,code=sm_75")
     cc_flag.append("-gencode")
     cc_flag.append("arch=compute_80,code=sm_80")
-    if CUDA_HOME is not None:
-        if bare_metal_version >= Version("11.8"):
-            cc_flag.append("-gencode")
-            cc_flag.append("arch=compute_90,code=sm_90")
+    #if CUDA_HOME is not None:
+    #    if bare_metal_version >= Version("11.8"):
+    #        cc_flag.append("-gencode")
+    #        cc_flag.append("arch=compute_90,code=sm_90")
 
     # HACK: The compiler flag -D_GLIBCXX_USE_CXX11_ABI is set to be the same as
     # torch._C._GLIBCXX_USE_CXX11_ABI
@@ -196,9 +198,15 @@ if not SKIP_CUDA_BUILD:
                         "--expt-relaxed-constexpr",
                         "--expt-extended-lambda",
                         "--use_fast_math",
-                        # "--ptxas-options=-v",
-                        # "--ptxas-options=-O2",
-                        # "-lineinfo",
+                        #"--ptxas-options=-v",
+                        #"--ptxas-options=-O2",
+                        "-lineinfo",
+                        #"-G",
+                        "-DFLASHATTENTION_DISABLE_BACKWARD",
+                        "-DFLASHATTENTION_DISABLE_DROPOUT",
+                        "-DFLASHATTENTION_DISABLE_ALIBI",
+                        "-DFLASHATTENTION_DISABLE_UNEVEN_K",
+                        "-DFLASHATTENTION_DISABLE_LOCAL",
                     ]
                     + generator_flag
                     + cc_flag

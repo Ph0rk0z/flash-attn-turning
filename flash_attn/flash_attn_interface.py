@@ -16,9 +16,12 @@ def _get_block_size_n(device, head_dim, is_dropout, is_causal):
     # This should match the block sizes in the CUDA kernel
     assert head_dim <= 256
     major, minor = torch.cuda.get_device_capability(device)
+    is_sm7x = major == 7 and minor > 0 #Turning
     is_sm8x = major == 8 and minor > 0  # Only include sm86 and sm89, exclude sm80 (A100)
     is_sm80 = major == 8 and minor == 0
     is_sm90 = major == 9 and minor == 0
+    if is_sm7x:
+        return 32
     if head_dim <= 32:
         return 128
     if head_dim <= 64:
@@ -46,6 +49,16 @@ def _get_block_size_n(device, head_dim, is_dropout, is_causal):
 def _flash_attn_forward(
     q, k, v, dropout_p, softmax_scale, causal, window_size, alibi_slopes, return_softmax
 ):
+    # Print statements for the parameters
+    print(f"q: {q} (shape: {q.shape}, dtype: {q.dtype})")
+    print(f"k: {k} (shape: {k.shape}, dtype: {k.dtype})")
+    print(f"v: {v} (shape: {v.shape}, dtype: {v.dtype})")
+    print(f"dropout_p: {dropout_p} (type: {type(dropout_p)})")
+    print(f"softmax_scale: {softmax_scale} (type: {type(softmax_scale)})")
+    print(f"causal: {causal} (type: {type(causal)})")
+    print(f"window_size: {window_size} (type: {type(window_size)})")
+    print(f"alibi_slopes: {alibi_slopes} (type: {type(alibi_slopes)})")
+    print(f"return_softmax: {return_softmax} (type: {type(return_softmax)})")
     maybe_contiguous = lambda x: x.contiguous() if x.stride(-1) != 1 else x
     q, k, v = [maybe_contiguous(x) for x in (q, k, v)]
     out, q, k, v, out_padded, softmax_lse, S_dmask, rng_state = flash_attn_cuda.fwd(
